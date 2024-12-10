@@ -532,10 +532,87 @@ where
           where accounts.id = '3b79e403-c788-495a-a8ca-86ad7643afaf');
 
 -- 7. The name and email of the user with the highest money in all his/her accounts
-select name, email
-from users
-where
-    id = (select user_id from accounts order by mount desc limit 1);
+WITH processed_movements(account, mount) as (
+    (
+        -- deposits
+        select
+            account_from as account,
+            mount
+        from
+            movements
+        where
+            type = 'IN'
+        order by
+            type
+    )
+    union all
+    (
+        -- withdrawals
+        select
+            account_from as account,
+            mount * -1 as mount
+        from
+            movements
+        where
+            type in ('OUT', 'OTHER')
+        order by
+            type
+    )
+    union all
+    (
+        -- outbound transfers
+        select
+            account_from as account,
+            mount * -1 as mount
+        from
+            movements
+        where
+            type = 'TRANSFER'
+    )
+    union all
+    (
+        -- inbound transfers
+        select
+            account_to as account,
+            mount
+        from
+            movements
+        where
+            type = 'TRANSFER'
+    )
+    union all
+    (
+        -- starting balances
+        select
+            id as account,
+            mount
+        from
+            accounts
+    )
+),
+     top(account, mount) as (
+         select
+             account,
+             ROUND(
+                     sum(mount):: numeric,
+                     2
+             ) as mount
+         from
+             processed_movements
+         group by
+             account
+         order by
+             mount desc
+         limit 1
+     )
+select
+    u.*
+from
+    top
+        left join accounts on accounts.id = top.account
+        left join users as u on accounts.user_id = u.id;
+
+
 
 -- 8. Show all the movements for the user Kaden.Gusikowski@gmail.com order by account type and created_at on the movements table
 with relevantAccounts(id, type) as (
