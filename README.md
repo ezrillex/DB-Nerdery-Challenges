@@ -449,25 +449,15 @@ from
 8. Show all the movements for the user `Kaden.Gusikowski@gmail.com` order by account type and created_at on the movements table
 
 ```postgresql
-with relevantAccounts(id, type) as (
-    select id, type from accounts
-    where user_id = (select id from users where email = 'Kaden.Gusikowski@gmail.com')
-)
-
-select
-    COALESCE(ra1.type, ra2.type) as account_type,
-    mov.*
-from
-    movements as mov
-        left join relevantAccounts as ra1 on mov.account_to = ra1.id
-        left join relevantAccounts as ra2 on mov.account_from = ra2.id
+-- 8. Show all the movements for the user Kaden.Gusikowski@gmail.com order by account type and created_at on the movements table
+select * from 
+users
+left join accounts on accounts.user_id = users.id
+left join movements on accounts.id IN  (movements.account_from, movements.account_to)
 where
-    account_from in (select id from relevantAccounts)
-   OR
-    account_to in (select id from relevantAccounts)
+users.email = 'Kaden.Gusikowski@gmail.com'
 order by
-    account_type,
-    mov.type, -- in case the github has typo and it meant movement type, not account type.
-    mov.created_at -- ASSUMED it meant movement table created at.
+    accounts.type,
+	movements.created_at;
 ```
 
