@@ -20,7 +20,7 @@ from
             type = 'CURRENT_ACCOUNT'
         group by
             user_id
-    )
+    ) as target
 where
     count >= 2;
 
@@ -108,7 +108,7 @@ from
                     from
                         accounts
                 )
-            )
+            ) as target
         group by
             account
         order by
